@@ -1,0 +1,13 @@
+create these files to run the bot
+
+.env 
+must contain:
+API_TOKEN = "Telegram Bot Token"
+YANDEX_TOKEN = "Token of Yandex Disk"
+YADISK_HOME_PATH = "Default/home/dir/on/Yandex.Disk"
+
+authorized_users.txt
+must contain list of telegram user.ids, sep='\n'
+example:
+0000001
+0000002
