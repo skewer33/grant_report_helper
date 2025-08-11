@@ -126,6 +126,16 @@ def get_user_template(user_id: int) -> str | None:
     user_templates = load_user_templates()
     return user_templates.get(str(user_id))
 
+def get_savedir(user_id: str) -> str:
+    """
+    Возвращает имя папки для документов пользователя без префикса 'Шаблон_'
+    """
+    template_name = get_user_template(user_id)
+    if not template_name:
+        logger.warning(f"Шаблон не найден для пользователя {user_id}")
+        return None
+    return template_name.removeprefix('Шаблон_')
+
 def get_template_names():
     return [f['name'] for f in yadisk_client.listdir(TEMPLATES_FOLDER) if f['path'].endswith(".xlsx")]
 
@@ -219,7 +229,8 @@ async def processing_document(message: types.Message):
         await message.answer("❌ Не удалось определить текущий шаблон.")
         return
 
-    template_docs_folder = posixpath.join(REPORT_FOLDER, current_template)
+    savedir_name = get_savedir(user_id)
+    template_docs_folder = posixpath.join(REPORT_FOLDER, savedir_name)
     filename = get_unique_filename(template_docs_folder, base_name + ext)
     file_path_on_disk = posixpath.join(template_docs_folder, filename)
 
@@ -474,7 +485,8 @@ async def handle_document_upload(message: types.Message):
             return
         
         # Создаём папку для документов этого шаблона
-        template_docs_folder = posixpath.join(REPORT_FOLDER, template_name)
+        savedir_name = get_savedir(user_id)
+        template_docs_folder = posixpath.join(REPORT_FOLDER, savedir_name)
         try:
             yadisk_client.mkdir(template_docs_folder, parents=True)
             logger.info(f"Папка для документов шаблона '{template_name}' создана на Я.Диске")
