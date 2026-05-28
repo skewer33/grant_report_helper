@@ -568,7 +568,7 @@ async def handle_recent_expenses(message: types.Message):
 # async def debug(message: types.Message):
 #     logger.info((repr(message.text)))
 
-@dp.message(F.text.contains("Экспорт"))
+@dp.message(F.text == "📤 Экспорт")
 @require_authorization
 async def handle_export(message: types.Message):
     user_id = str(message.from_user.id)
@@ -970,8 +970,11 @@ async def handle_document_upload(message: types.Message):
         return
 
     file_info = await bot.get_file(document.file_id)
-    local_path = os.path.join(os.getcwd(), document.file_name)
-    await bot.download_file(file_info.file_path, destination=local_path)
+    temp_path = os.path.join(os.getcwd(), "temp", document.file_name)
+
+    os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+
+    await bot.download_file(file_info.file_path, destination=temp_path)
 
     if state == "awaiting_template_file":
         if not document.file_name.endswith(".xlsx"):
@@ -979,7 +982,7 @@ async def handle_document_upload(message: types.Message):
             return
 
         try:
-            df = pd.read_excel(local_path)
+            df = pd.read_excel(temp_path)
         except Exception:
             logger.exception("Ошибка при чтении Excel-файла")
             await message.answer("❌ Не удалось прочитать файл. Убедитесь, что это Excel.")
@@ -994,7 +997,7 @@ async def handle_document_upload(message: types.Message):
         disk_path = posixpath.join(TEMPLATES_FOLDER, f"{template_name}.xlsx")
 
         try:
-            yadisk_client.upload(local_path, disk_path, overwrite=True)
+            yadisk_client.upload(temp_path, disk_path, overwrite=True)
             logger.info(f"✅ Шаблон '{template_name}' загружен на Я.Диск пользователем {message.from_user.id}")
         except Exception:
             logger.exception("Ошибка загрузки шаблона на Яндекс.Диск")
@@ -1023,6 +1026,7 @@ async def handle_document_upload(message: types.Message):
         await processing_document(message)
     else:
         await message.answer("❌ Сейчас бот не ожидает загрузки файла.")
+    os.remove(temp_path)
 
 @dp.message(F.photo)
 @require_authorization
